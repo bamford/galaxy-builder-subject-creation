@@ -10,11 +10,13 @@ import createSubjectsFunctions as csf
 
 
 # TODO: replace indexing with some kind of proper object ID
-def main(objList, outFolder='subjects'):
+def main(objList, outFolder='subjects', outFolderFits='cutouts'):
     # objList is list of (ra, dec, petrotheta)s for target galaxies
-    # make sure the outfolder exists
+    # make sure the output folders exists
     if not os.path.exists(outFolder):
         os.mkdir(outFolder)
+    if not os.path.exists(outFolderFits):
+        os.mkdir(outFolderFits)
     psfs = []
     # cycle through the input objects
     for i, (ra, dec, petrotheta) in enumerate(objList):
@@ -27,7 +29,7 @@ def main(objList, outFolder='subjects'):
         fileLoc = scg.getBandFits(frame)
         fitsFile = fits.open(fileLoc)
         # read it in and crop out around the galaxy
-        imageData = scg.cutFits(
+        imageData, sigma = scg.cutFits(
             fitsFile,
             ra, dec,
             size=(4 * petrotheta * u.arcsec, 4 * petrotheta * u.arcsec)
@@ -124,6 +126,26 @@ def main(objList, outFolder='subjects'):
         metaFileName = '{}/metadata_{}.json'.format(outFolder, i)
         with open(metaFileName, 'w') as f:
             json.dump(metadata, f)
+
+        # create galfit input file
+        feedme = "{}/galfit_{}.feedme".format(outFolderFits, i)
+        galfit = {'image': "{}/image_{}.fits".format(outFolderFits, i),
+                  'mask': "{}/mask_{}.fits".format(outFolderFits, i),
+                  'sigma': "{}/sigma_{}.fits".format(outFolderFits, i),
+                  'psf': "{}/psf_{}.fits".format(outFolderFits, i),
+                  'output': "{}/galfit_{}.fits".format(outFolderFits, i),
+                  'xmax': imageData.shape[0],
+                  'ymax': imageData.shape[1],
+                  'zeropoint': 25}
+        with file(feedme, 'w') as feedme_file:
+            for line in file('feedme.template'):
+                feedme_file.write(line.format(galfit)+'\n')
+
+        # save fits
+        fits.writeto(galfit['image'], imageData)
+        fits.writeto(galfit['mask'], mask)
+        fits.writeto(galfit['sigma'], sigma)
+        fits.writeto(galfit['psf'], psf)
 
 
 lucyGals = (
