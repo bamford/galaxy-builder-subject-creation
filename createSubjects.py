@@ -2,6 +2,7 @@ import os
 import json
 import gzip
 import shutil
+import numpy as np
 from numpy import sum, max, array
 import astropy.units as u
 from astropy.io import fits
@@ -22,17 +23,17 @@ def main(objList, outFolder='subjects', outFolderFits='cutouts'):
     for i, (ra, dec, petrotheta) in enumerate(objList):
         # search by ra, dec
         print('🛰  Looking for galaxy at {}, {}'.format(ra, dec))
-        frame = scg.queryFromRaDec(ra, dec)
+        frame = scg.queryFromRaDec(ra, dec, radius=0.05)
         if not len(frame):
             print("💩  Couldn\'t find any galaxies")
             continue
-        fileLoc = scg.getBandFits(frame)
-        fitsFile = fits.open(fileLoc)
+        fileLoc = scg.getBandFits(frame[0])
         # read it in and crop out around the galaxy
         imageData, sigma = scg.cutFits(
-            fitsFile,
+            fileLoc,
             ra, dec,
-            size=(4 * petrotheta * u.arcsec, 4 * petrotheta * u.arcsec)
+            size=(4 * petrotheta * u.arcsec, 4 * petrotheta * u.arcsec),
+            sigma=True
         )
         if imageData is False:
             print('\t💀  \033[31mReturned False from image Data\033[0m')
@@ -40,9 +41,11 @@ def main(objList, outFolder='subjects', outFolderFits='cutouts'):
             continue
 
         # Use source extractor to identify objects TODO proper deblending
+        fitsFile = fits.open(fileLoc)
         objects, segmentation_map = csf.sourceExtractImage(
             imageData,
-            fitsFile[2].data[0][0]
+            #fitsFile[2].data[0][0]
+            None
         )
         # create a true/false masking array
         mask = csf.maskArr(imageData, segmentation_map, objects[-1][0] + 1)
@@ -60,7 +63,7 @@ def main(objList, outFolder='subjects', outFolderFits='cutouts'):
             size=resizeTo
         )
         # Now we find the PSF
-        psf = csf.getPSF((ra, dec), frame, fitsFile)
+        psf = csf.getPSF((ra, dec), frame[0], fitsFile)
         c = 20
         # crop out most of the 0-ish stuff
         psfCut = psf[c:-c, c:-c]
@@ -100,7 +103,7 @@ def main(objList, outFolder='subjects', outFolderFits='cutouts'):
             'Ra': ra,
             'Dec': dec,
             'petrotheta': petrotheta,
-            'SDSS_ID': int(frame.get('objID', 0)),
+            'SDSS_ID': int(frame[0].get('objID', 0)),
             '#isModelling': True,
             '#models': [
                 {'frame': 1, 'model': 'GALAXY_BUILDER_DIFFERENCE'},
@@ -137,13 +140,13 @@ def main(objList, outFolder='subjects', outFolderFits='cutouts'):
                   'xmax': imageData.shape[0],
                   'ymax': imageData.shape[1],
                   'zeropoint': 25}
-        with file(feedme, 'w') as feedme_file:
-            for line in file('feedme.template'):
-                feedme_file.write(line.format(galfit)+'\n')
+        with open(feedme, 'w') as feedme_file:
+            for line in open('feedme.template'):
+                feedme_file.write(line.format(**galfit))
 
         # save fits
         fits.writeto(galfit['image'], imageData)
-        fits.writeto(galfit['mask'], mask)
+        fits.writeto(galfit['mask'], mask.astype(np.int))
         fits.writeto(galfit['sigma'], sigma)
         fits.writeto(galfit['psf'], psf)
 

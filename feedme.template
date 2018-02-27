@@ -119,7 +119,7 @@ W) input,model,sigma,residual    # or any comma separated list of valid options
 #  tangent truncation in the inner region.
 #
 #  When multiple profiles are linked, mathematically they are linked by:
-#    f_net(r) = Sum{f_inner(r)} * (1-s(r)) + Sum{f_outer(r)} * s(r).
+#    f_net(r) = Sum[f_inner(r)] * (1-s(r)) + Sum[f_outer(r)] * s(r).
 #  The transition radii are shared by the inner & outer functions in the
 #  sense that r_break is where inner profiles reaches 99% of their normal 
 #  flux; it is also the radius where the outer functions reaches 1% of their 
