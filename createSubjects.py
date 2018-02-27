@@ -139,6 +139,8 @@ def main(objList, outFolder='subjects', outFolderFits='cutouts'):
                   'output': "{}/galfit_{}.fits".format(outFolderFits, i),
                   'xmax': imageData.shape[0],
                   'ymax': imageData.shape[1],
+                  'xc': imageData.shape[0]/2.0 - 0.5,
+                  'yc': imageData.shape[1]/2.0 - 0.5,
                   'zeropoint': 25}
         with open(feedme, 'w') as feedme_file:
             for line in open('feedme.template'):

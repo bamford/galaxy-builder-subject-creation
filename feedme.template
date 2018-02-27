@@ -29,8 +29,8 @@ W) input,model,sigma,residual    # or any comma separated list of valid options
 
 # bulge
  0) sersic     # Object type
- 1) 1040.  1    # position x [pixel]
- 2) 165.  1    # position y [pixel]
+ 1) {xc}  1    # position x [pixel]
+ 2) {yc}  1    # position y [pixel]
  3) 20.0  1    # total magnitude in each band
  4) 4.00  1    # R_e in each band
  5) 3.00  1    # Sersic exponent in each band
@@ -40,8 +40,8 @@ W) input,model,sigma,residual    # or any comma separated list of valid options
 
 # disk
  0) sersic     # Object type
- 1) 1040.  1    # position x [pixel]
- 2) 165.  1    # position y [pixel]
+ 1) {xc}  1    # position x [pixel]
+ 2) {yc}  1    # position y [pixel]
  3) 20.0  1    # total magnitude in each band
  4) 10.00  1    # R_e in each band
  5) 1.00  1    # Sersic exponent in each band
